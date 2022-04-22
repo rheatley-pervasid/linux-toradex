@@ -1,35 +1,3 @@
-variables:
-# uncomment for the pipeline debug purpose
-# CI_DEBUG_TRACE: "true"
-  CI_IMAGE: gitlab.int.toradex.com:4567/philippe.schenker/linux-toradex/ci-kernel-builder:gcc9
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: ""
-
-stages:
-  - build-kernel
-
-build_kernel:
-  stage: build-kernel
-  image: $CI_IMAGE
-  variables:
-    GIT_STRATEGY: fetch
-    GIT_DEPTH: "1"
-  script: |
-    echo "GCC used to build binaries is"
-    which ${CROSS_COMPILE}gcc
-    ${CROSS_COMPILE}gcc --version
-    echo -e "Arch is \e[36m$ARCH\e[39m"
-    echo "Current directory: ${PWD}"
-    THREADS=$(grep processor /proc/cpuinfo -c)
-    echo "building with $THREADS parallel threads"
-    cd $CI_PROJECT_DIR
-    DEVICETREES=$(ls arch/arm/boot/dts/vf*colibri*.dts | sed 's/arch\/arm\/boot\/dts\///' | sed 's/\.dts/\.dtb/')
-    make colibri_vf_defconfig
-    # workaround lzop missing in the build container
-    sed -i 's/CONFIG_KERNEL_LZO=y/# CONFIG_KERNEL_LZO is not set/' .config
-    sed -i 's/..CONFIG_KERNEL_GZIP is not set/CONFIG_KERNEL_GZIP=y/' .config
-    echo -e "building: \n$DEVICETREES"
-    make -j$THREADS $DEVICETREES
-    make -j$THREADS
-    make mrproper
+include:
+  - https://gitlab.com/cip-project/cip-testing/linux-cip-pipelines/raw/master/linux-cip-pipeline.yml
+  - https://gitlab.com/cip-project/cip-testing/linux-cip-pipelines/raw/master/trees/linux-4.4.y-cip.yml
